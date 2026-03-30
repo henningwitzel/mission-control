@@ -157,7 +157,7 @@ app.get('/api/kb/stats', (req, res) => {
 app.get('/api/kb/sources', (req, res) => {
   try {
     const db = getDb();
-    const sources = db.prepare('SELECT id, title, url, source_type, domain, summary, relevance, tags, date_added, depth FROM sources ORDER BY date_added DESC').all();
+    const sources = db.prepare('SELECT id, title, url, source_type, domain, summary, relevance, tags, date_added, depth, content_full FROM sources ORDER BY date_added DESC').all();
     db.close();
     res.json({ sources });
   } catch (e) {
