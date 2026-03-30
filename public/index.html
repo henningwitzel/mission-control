@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenClaw Mission Control</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #1c2129;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --accent: #58a6ff;
+    --accent-dim: #1f6feb;
+    --green: #3fb950;
+    --red: #f85149;
+    --orange: #d29922;
+    --purple: #bc8cff;
+    --tile-empty: #1b2028;
+    --tile-has: #2ea04366;
+    --tile-has-hover: #3fb95088;
+    --tile-today: #58a6ff33;
+    --radius: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* === Top Nav === */
+  .topnav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topnav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    height: 52px;
+    gap: 8px;
+  }
+
+  .logo {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-right: 24px;
+    white-space: nowrap;
+    letter-spacing: -0.3px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover { color: var(--text); background: var(--surface-2); }
+  .tab-btn.active { color: var(--text); background: var(--accent-dim); }
+
+  /* === Main === */
+  .main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* === Shared === */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-header h3 { font-size: 14px; font-weight: 500; }
+
+  .badge {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .btn {
+    background: var(--accent-dim);
+    color: var(--text);
+    border: none;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn:hover { background: var(--accent); color: #000; }
+
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); background: var(--surface-2); }
+
+  .btn-danger { background: #da36332a; border: 1px solid #f8514933; color: var(--red); }
+  .btn-danger:hover { background: #da363344; }
+
+  input, textarea, select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    width: 100%;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  /* === Memory Section === */
+  .calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .calendar-nav h2 {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-muted);
+    min-width: 160px;
+    text-align: center;
+  }
+
+  .nav-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+
+  .nav-btn:hover { background: var(--border); color: var(--text); }
+
+  .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+
+  .calendar-weekdays span {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 0;
+    font-weight: 500;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 24px;
+  }
+
+  .day-tile {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--tile-empty);
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    cursor: default;
+  }
+
+  .day-tile.other-month { background: transparent; color: #30363d; }
+  .day-tile.has-entry { background: var(--tile-has); color: var(--green); cursor: pointer; font-weight: 500; }
+  .day-tile.has-entry:hover { background: var(--tile-has-hover); border-color: var(--green); }
+  .day-tile.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-dim); }
+  .day-tile.today.has-entry { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+  .day-tile.selected { border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent) !important; }
+
+  .content-body { padding: 20px; }
+  .content-body.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .stats-bar { display: flex; gap: 24px; margin-bottom: 20px; }
+  .stat { font-size: 13px; color: var(--text-muted); }
+  .stat strong { color: var(--text); font-weight: 600; }
+
+  /* Markdown */
+  .markdown-content h1 { font-size: 22px; font-weight: 600; margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .markdown-content h2 { font-size: 18px; font-weight: 600; margin: 24px 0 12px; color: var(--accent); }
+  .markdown-content h3 { font-size: 15px; font-weight: 600; margin: 20px 0 8px; }
+  .markdown-content p { margin: 0 0 12px; line-height: 1.6; font-size: 14px; color: #c9d1d9; }
+  .markdown-content ul, .markdown-content ol { margin: 0 0 12px; padding-left: 24px; }
+  .markdown-content li { margin: 4px 0; line-height: 1.6; font-size: 14px; color: #c9d1d9; }
+  .markdown-content code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; color: var(--accent); }
+  .markdown-content pre { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 0 0 16px; overflow-x: auto; }
+  .markdown-content pre code { background: none; padding: 0; color: var(--text); }
+  .markdown-content blockquote { border-left: 3px solid var(--accent-dim); padding-left: 16px; margin: 0 0 12px; color: var(--text-muted); }
+  .markdown-content hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .markdown-content a { color: var(--accent); text-decoration: none; }
+  .markdown-content a:hover { text-decoration: underline; }
+  .markdown-content strong { color: var(--text); }
+
+  /* === Task Board === */
+  .kanban {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 900px) {
+    .kanban { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    .kanban { grid-template-columns: 1fr; }
+    .topnav-inner { gap: 4px; }
+    .tab-btn { padding: 8px 10px; font-size: 12px; }
+    .logo { margin-right: 12px; font-size: 13px; }
+    .tasks-layout { flex-direction: column !important; }
+    .activity-feed { max-width: 100% !important; }
+  }
+
+  .kanban-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kanban-col-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .kanban-col-header .count {
+    background: var(--bg);
+    color: var(--text-muted);
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .kanban-col-body { padding: 8px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+
+  .task-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    cursor: grab;
+    transition: border-color 0.15s;
+  }
+
+  .task-card:hover { border-color: var(--text-muted); }
+  .task-card.dragging { opacity: 0.5; }
+
+  .task-card-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; line-height: 1.4; }
+
+  .task-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .assignee-tag {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .assignee-tag.henning { background: #1f6feb33; color: var(--accent); }
+  .assignee-tag.openclaw { background: #2ea04333; color: var(--green); }
+
+  .task-card-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .task-card-actions button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .task-card-actions button:hover { color: var(--text); border-color: var(--text-muted); }
+
+  .tasks-layout {
+    display: flex;
+    gap: 20px;
+  }
+
+  .tasks-main { flex: 1; min-width: 0; }
+
+  .activity-feed {
+    max-width: 300px;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .activity-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .activity-item:last-child { border-bottom: none; }
+  .activity-item strong { color: var(--text); font-weight: 500; }
+  .activity-time { font-size: 11px; color: #484f58; margin-top: 2px; }
+
+  /* Task form */
+  .task-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  .task-form.open { display: block; }
+
+  .form-row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .form-row > * { flex: 1; }
+
+  /* === Crons Section === */
+  .cron-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .cron-table th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cron-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cron-table tr:last-child td { border-bottom: none; }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+
+  .status-dot.ok { background: var(--green); }
+  .status-dot.error { background: var(--red); }
+  .status-dot.idle { background: var(--text-muted); }
+
+  .cron-refresh {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* === KB Section === */
+  .kb-search-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .kb-search-bar input { flex: 1; }
+
+  .kb-result {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .kb-result:hover { border-color: var(--text-muted); }
+
+  .kb-result-header {
+    padding: 14px 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .kb-result-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .kb-result-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+
+  .kb-result-meta .type-tag {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+
+  .kb-result-body {
+    display: none;
+    padding: 0 20px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #c9d1d9;
+    border-top: 1px solid var(--border);
+    margin: 0 12px;
+    padding-top: 12px;
+  }
+
+  .kb-result.expanded .kb-result-body { display: block; }
+
+  .kb-result-body a { color: var(--accent); }
+
+  .depth-indicator {
+    display: inline-flex;
+    gap: 2px;
+  }
+
+  .depth-bar {
+    width: 4px;
+    height: 12px;
+    border-radius: 1px;
+    background: var(--border);
+  }
+
+  .depth-bar.filled { background: var(--accent); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .empty-state .icon { font-size: 32px; margin-bottom: 12px; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+<!-- Top Navigation -->
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="logo"><span>Open</span>Claw</div>
+    <button class="tab-btn active" data-tab="memory">Memory</button>
+    <button class="tab-btn" data-tab="tasks">Tasks</button>
+    <button class="tab-btn" data-tab="crons">Crons</button>
+    <button class="tab-btn" data-tab="kb">Knowledge Base</button>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- ===== MEMORY SECTION ===== -->
+  <div class="section active" id="sec-memory">
+    <div class="stats-bar" id="mem-stats"></div>
+
+    <div class="calendar-nav">
+      <button class="nav-btn" id="prev-month">&larr;</button>
+      <h2 id="month-label"></h2>
+      <button class="nav-btn" id="next-month">&rarr;</button>
+    </div>
+
+    <div class="calendar-weekdays">
+      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+    </div>
+
+    <div class="calendar-grid" id="calendar"></div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h3 id="mem-content-title">Select a date</h3>
+        <span class="badge" id="mem-badge" style="display:none"></span>
+      </div>
+      <div class="content-body empty" id="mem-content-body">
+        Click a highlighted date to view its memory log
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TASKS SECTION ===== -->
+  <div class="section" id="sec-tasks">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="font-size:16px;font-weight:600">Task Board</h2>
+      <button class="btn btn-sm" onclick="toggleTaskForm()">+ New Task</button>
+    </div>
+
+    <div class="task-form" id="task-form">
+      <div class="form-row">
+        <input id="tf-title" placeholder="Task title" />
+        <select id="tf-assignee" style="max-width:160px">
+          <option value="Henning">Henning</option>
+          <option value="OpenClaw">OpenClaw</option>
+        </select>
+      </div>
+      <textarea id="tf-desc" placeholder="Description (optional)" rows="2" style="margin-bottom:12px"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="createTask()">Create</button>
+        <button class="btn btn-sm btn-ghost" onclick="toggleTaskForm()">Cancel</button>
+      </div>
+    </div>
+
+    <div class="tasks-layout">
+      <div class="tasks-main">
+        <div class="kanban" id="kanban"></div>
+      </div>
+      <div class="activity-feed">
+        <div class="panel">
+          <div class="panel-header"><h3>Activity</h3></div>
+          <div id="activity-list" style="max-height:500px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CRONS SECTION ===== -->
+  <div class="section" id="sec-crons">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="font-size:16px;font-weight:600">Cron Calendar</h2>
+      <span class="cron-refresh" id="cron-refresh-label">Auto-refresh: 30s</span>
+    </div>
+    <div class="panel">
+      <div id="cron-body" style="overflow-x:auto">
+        <div class="empty-state"><div class="icon">&#9203;</div>Loading cron jobs...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== KB SECTION ===== -->
+  <div class="section" id="sec-kb">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="font-size:16px;font-weight:600">Knowledge Base</h2>
+      <span class="badge" id="kb-stats-badge"></span>
+    </div>
+
+    <div class="kb-search-bar">
+      <input id="kb-search" placeholder="Search knowledge base..." />
+      <button class="btn" onclick="searchKB()">Search</button>
+    </div>
+
+    <div id="kb-results">
+      <div class="empty-state"><div class="icon">&#128218;</div>Search to find sources</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===== TAB SWITCHING =====
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('sec-' + btn.dataset.tab).classList.add('active');
+
+    if (btn.dataset.tab === 'tasks') loadTasks();
+    if (btn.dataset.tab === 'crons') loadCrons();
+    if (btn.dataset.tab === 'kb') loadKBStats();
+  });
+});
+
+// ===== MEMORY (preserved from original) =====
+let allDates = new Set();
+let currentYear, currentMonth;
+let selectedDate = null;
+const today = new Date();
+const todayStr = fmt(today);
+
+function fmt(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function monthName(m) {
+  return ['January','February','March','April','May','June','July','August','September','October','November','December'][m];
+}
+
+async function initMemory() {
+  const res = await fetch('/api/dates');
+  const dates = await res.json();
+  allDates = new Set(dates);
+
+  document.getElementById('mem-stats').innerHTML =
+    `<div class="stat"><strong>${dates.length}</strong> entries</div>` +
+    (dates.length > 0 ? `<div class="stat">First: <strong>${dates[0]}</strong></div><div class="stat">Latest: <strong>${dates[dates.length-1]}</strong></div>` : '');
+
+  currentYear = today.getFullYear();
+  currentMonth = today.getMonth();
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('month-label').textContent = `${monthName(currentMonth)} ${currentYear}`;
+  const grid = document.getElementById('calendar');
+  grid.innerHTML = '';
+
+  const firstDay = new Date(currentYear, currentMonth, 1);
+  let startDow = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
+
+  for (let i = startDow - 1; i >= 0; i--) {
+    const tile = makeTile(prevMonthDays - i, true, null);
+    grid.appendChild(tile);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    grid.appendChild(makeTile(d, false, dateStr));
+  }
+
+  const remaining = (7 - (grid.children.length % 7)) % 7;
+  for (let d = 1; d <= remaining; d++) {
+    grid.appendChild(makeTile(d, true, null));
+  }
+}
+
+function makeTile(day, otherMonth, dateStr) {
+  const tile = document.createElement('div');
+  tile.className = 'day-tile';
+  tile.textContent = day;
+  if (otherMonth) { tile.classList.add('other-month'); return tile; }
+  if (dateStr === todayStr) tile.classList.add('today');
+  if (dateStr === selectedDate) tile.classList.add('selected');
+  if (allDates.has(dateStr)) {
+    tile.classList.add('has-entry');
+    tile.addEventListener('click', () => loadEntry(dateStr));
+  }
+  return tile;
+}
+
+async function loadEntry(dateStr) {
+  selectedDate = dateStr;
+  renderCalendar();
+  const body = document.getElementById('mem-content-body');
+  const badge = document.getElementById('mem-badge');
+  document.getElementById('mem-content-title').textContent = formatDateDisplay(dateStr);
+  body.className = 'content-body';
+  body.innerHTML = '<div style="color:var(--text-muted);font-size:14px">Loading...</div>';
+
+  try {
+    const res = await fetch(`/api/memory/${dateStr}`);
+    const data = await res.json();
+    if (data.error) { body.className = 'content-body empty'; body.textContent = data.error; badge.style.display = 'none'; return; }
+    badge.textContent = `${data.content.split('\n').length} lines`;
+    badge.style.display = '';
+    body.innerHTML = '<div class="markdown-content">' + marked.parse(data.content) + '</div>';
+  } catch {
+    body.className = 'content-body empty';
+    body.textContent = 'Failed to load entry';
+    badge.style.display = 'none';
+  }
+}
+
+function formatDateDisplay(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  return `${days[date.getDay()]}, ${monthName(m-1)} ${d}, ${y}`;
+}
+
+document.getElementById('prev-month').addEventListener('click', () => {
+  currentMonth--;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderCalendar();
+});
+
+document.getElementById('next-month').addEventListener('click', () => {
+  currentMonth++;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderCalendar();
+});
+
+// ===== TASKS =====
+const STATUSES = ['backlog', 'in_progress', 'review', 'done'];
+const STATUS_LABELS = { backlog: 'Backlog', in_progress: 'In Progress', review: 'Review', done: 'Done' };
+const STATUS_COLORS = { backlog: 'var(--text-muted)', in_progress: 'var(--accent)', review: 'var(--orange)', done: 'var(--green)' };
+
+let draggedTaskId = null;
+
+function toggleTaskForm() {
+  document.getElementById('task-form').classList.toggle('open');
+  document.getElementById('tf-title').value = '';
+  document.getElementById('tf-desc').value = '';
+}
+
+async function createTask() {
+  const title = document.getElementById('tf-title').value.trim();
+  if (!title) return;
+  await fetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title,
+      description: document.getElementById('tf-desc').value.trim(),
+      assignee: document.getElementById('tf-assignee').value
+    })
+  });
+  toggleTaskForm();
+  loadTasks();
+}
+
+async function moveTask(id, newStatus) {
+  await fetch(`/api/tasks/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus })
+  });
+  loadTasks();
+}
+
+async function deleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+  loadTasks();
+}
+
+async function loadTasks() {
+  const res = await fetch('/api/tasks');
+  const data = await res.json();
+  const tasks = data.tasks || [];
+  const activity = data.activity || [];
+
+  const kanban = document.getElementById('kanban');
+  kanban.innerHTML = '';
+
+  STATUSES.forEach(status => {
+    const col = document.createElement('div');
+    col.className = 'kanban-col';
+    const colTasks = tasks.filter(t => t.status === status);
+
+    col.innerHTML = `
+      <div class="kanban-col-header" style="color:${STATUS_COLORS[status]}">
+        ${STATUS_LABELS[status]}
+        <span class="count">${colTasks.length}</span>
+      </div>
+    `;
+
+    const body = document.createElement('div');
+    body.className = 'kanban-col-body';
+    body.dataset.status = status;
+
+    body.addEventListener('dragover', e => { e.preventDefault(); body.style.background = 'var(--surface-2)'; });
+    body.addEventListener('dragleave', () => { body.style.background = ''; });
+    body.addEventListener('drop', e => {
+      e.preventDefault();
+      body.style.background = '';
+      if (draggedTaskId) moveTask(draggedTaskId, status);
+    });
+
+    colTasks.forEach(task => {
+      const card = document.createElement('div');
+      card.className = 'task-card';
+      card.draggable = true;
+      card.addEventListener('dragstart', () => { draggedTaskId = task.id; card.classList.add('dragging'); });
+      card.addEventListener('dragend', () => { draggedTaskId = null; card.classList.remove('dragging'); });
+
+      const assigneeClass = task.assignee.toLowerCase().replace(/\s/g, '');
+      const prevStatus = STATUSES[STATUSES.indexOf(status) - 1];
+      const nextStatus = STATUSES[STATUSES.indexOf(status) + 1];
+
+      let actions = '';
+      if (prevStatus) actions += `<button onclick="moveTask('${task.id}','${prevStatus}')">&larr; ${STATUS_LABELS[prevStatus]}</button>`;
+      if (nextStatus) actions += `<button onclick="moveTask('${task.id}','${nextStatus}')">${STATUS_LABELS[nextStatus]} &rarr;</button>`;
+      actions += `<button onclick="deleteTask('${task.id}')" style="color:var(--red)">&#10005;</button>`;
+
+      card.innerHTML = `
+        <div class="task-card-title">${esc(task.title)}</div>
+        ${task.description ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;line-height:1.4">${esc(task.description)}</div>` : ''}
+        <div class="task-card-meta">
+          <span class="assignee-tag ${assigneeClass}">${esc(task.assignee)}</span>
+          <span>${timeAgo(task.updated_at)}</span>
+        </div>
+        <div class="task-card-actions">${actions}</div>
+      `;
+      body.appendChild(card);
+    });
+
+    col.appendChild(body);
+    kanban.appendChild(col);
+  });
+
+  // Activity feed
+  const actList = document.getElementById('activity-list');
+  if (activity.length === 0) {
+    actList.innerHTML = '<div class="activity-item" style="color:var(--text-muted)">No activity yet</div>';
+  } else {
+    actList.innerHTML = activity.slice(0, 10).map(a => `
+      <div class="activity-item">
+        <strong>${esc(a.title)}</strong>
+        ${a.action === 'created' ? ' was created' :
+          a.action === 'deleted' ? ' was deleted' :
+          ` moved from <strong>${STATUS_LABELS[a.from] || a.from}</strong> to <strong>${STATUS_LABELS[a.to] || a.to}</strong>`}
+        <div class="activity-time">${timeAgo(a.time)}</div>
+      </div>
+    `).join('');
+  }
+}
+
+// ===== CRONS =====
+let cronInterval = null;
+
+async function loadCrons() {
+  if (cronInterval) clearInterval(cronInterval);
+  cronInterval = setInterval(loadCrons, 30000);
+
+  const body = document.getElementById('cron-body');
+  try {
+    const res = await fetch('/api/crons');
+    const data = await res.json();
+    const crons = data.crons || [];
+
+    if (data.error) {
+      body.innerHTML = `<div class="empty-state"><div class="icon">&#9888;</div>${esc(data.error)}</div>`;
+      return;
+    }
+
+    if (crons.length === 0) {
+      body.innerHTML = '<div class="empty-state"><div class="icon">&#9203;</div>No cron jobs configured</div>';
+      return;
+    }
+
+    body.innerHTML = `<table class="cron-table">
+      <thead><tr>
+        <th>Name</th><th>Schedule</th><th>Next Run</th><th>Last Run</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        ${crons.map(c => {
+          const statusRaw = c.status || c.state?.lastStatus || c.state?.lastRunStatus || 'idle';
+          const status = (typeof statusRaw === 'string' ? statusRaw : 'idle').toLowerCase();
+          const dotClass = status === 'error' || status === 'failed' ? 'error' : status === 'ok' || status === 'active' || status === 'success' ? 'ok' : 'idle';
+          // Parse schedule
+          let scheduleStr = '—';
+          if (c.schedule) {
+            if (typeof c.schedule === 'string') scheduleStr = c.schedule;
+            else if (c.schedule.expr) scheduleStr = c.schedule.expr + (c.schedule.tz ? ' (' + c.schedule.tz + ')' : '');
+            else if (c.schedule.at) scheduleStr = 'Once: ' + new Date(c.schedule.at).toLocaleString();
+          }
+          // Parse next/last run
+          const nextRun = c.state?.nextRunAtMs ? new Date(c.state.nextRunAtMs).toLocaleString() : '—';
+          const lastRun = c.state?.lastRunAtMs ? new Date(c.state.lastRunAtMs).toLocaleString() : '—';
+          return `<tr>
+            <td style="font-weight:500">${esc(c.name || c.id || 'unnamed')}</td>
+            <td style="color:var(--text-muted)">${esc(scheduleStr)}</td>
+            <td>${nextRun}</td>
+            <td>${lastRun}</td>
+            <td><span class="status-dot ${dotClass}"></span>${esc(status)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  } catch (e) {
+    body.innerHTML = `<div class="empty-state"><div class="icon">&#9888;</div>Failed to load crons</div>`;
+  }
+  document.getElementById('cron-refresh-label').textContent = `Updated: ${new Date().toLocaleTimeString()} (auto-refresh: 30s)`;
+}
+
+// ===== KNOWLEDGE BASE =====
+async function loadKBStats() {
+  try {
+    const res = await fetch('/api/kb/stats');
+    const data = await res.json();
+    document.getElementById('kb-stats-badge').textContent = `${data.total} sources`;
+  } catch {}
+}
+
+async function searchKB() {
+  const q = document.getElementById('kb-search').value.trim();
+  if (!q) return;
+
+  const container = document.getElementById('kb-results');
+  container.innerHTML = '<div class="empty-state">Searching...</div>';
+
+  try {
+    const res = await fetch(`/api/kb/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+
+    if (data.error) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">&#9888;</div>${esc(data.error)}</div>`;
+      return;
+    }
+
+    if (!data.results || data.results.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="icon">&#128218;</div>No results found</div>';
+      return;
+    }
+
+    container.innerHTML = `<div class="stat" style="margin-bottom:12px"><strong>${data.results.length}</strong> results for "${esc(q)}"</div>` +
+      data.results.map(r => {
+        const depthBars = [1,2,3].map(i => `<div class="depth-bar ${i <= (r.depth || 1) ? 'filled' : ''}"></div>`).join('');
+        return `<div class="kb-result" onclick="this.classList.toggle('expanded')">
+          <div class="kb-result-header">
+            <div>
+              <div class="kb-result-title">${esc(r.title)}</div>
+              <div class="kb-result-meta">
+                <span class="type-tag">${esc(r.source_type)}</span>
+                ${r.domain ? `<span>${esc(r.domain)}</span>` : ''}
+                ${r.author ? `<span>${esc(r.author)}</span>` : ''}
+                <span>${r.date_added ? r.date_added.split('T')[0] : ''}</span>
+                <span class="depth-indicator" title="Depth: ${r.depth || 1}">${depthBars}</span>
+              </div>
+            </div>
+          </div>
+          <div class="kb-result-body">
+            ${r.summary ? `<p><strong>Summary:</strong> ${esc(r.summary)}</p>` : ''}
+            ${r.relevance ? `<p><strong>Relevance:</strong> ${esc(r.relevance)}</p>` : ''}
+            ${r.url ? `<p><a href="${esc(r.url)}" target="_blank">${esc(r.url)}</a></p>` : ''}
+            ${r.content_full ? `<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--accent);font-size:12px">Full content</summary><pre style="white-space:pre-wrap;margin-top:8px;font-size:12px;max-height:400px;overflow-y:auto">${esc(r.content_full)}</pre></details>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">&#9888;</div>Search failed</div>`;
+  }
+}
+
+document.getElementById('kb-search').addEventListener('keydown', e => {
+  if (e.key === 'Enter') searchKB();
+});
+
+// ===== UTILS =====
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+// ===== INIT =====
+initMemory();
+</script>
+</body>
+</html>
