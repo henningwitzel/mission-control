@@ -668,7 +668,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
     if (btn.dataset.tab === 'tasks') loadTasks();
     if (btn.dataset.tab === 'crons') loadCrons();
-    if (btn.dataset.tab === 'kb') loadKBStats();
+    if (btn.dataset.tab === 'kb') { loadKBStats(); loadAllSources(); }
   });
 });
 
@@ -968,6 +968,42 @@ async function loadCrons() {
 }
 
 // ===== KNOWLEDGE BASE =====
+async function loadAllSources() {
+  const container = document.getElementById('kb-results');
+  try {
+    const res = await fetch('/api/kb/sources');
+    const data = await res.json();
+    if (!data.sources || data.sources.length === 0) {
+      container.innerHTML = '<div class="empty-state">No sources yet</div>';
+      return;
+    }
+    container.innerHTML = `<div class="stat" style="margin-bottom:12px"><strong>${data.sources.length}</strong> sources in knowledge base</div>` +
+      data.sources.map(r => {
+        const depthBars = [1,2,3].map(i => `<div class="depth-bar ${i <= (r.depth || 1) ? 'filled' : ''}"></div>`).join('');
+        return `<div class="kb-result" onclick="this.classList.toggle('expanded')">
+          <div class="kb-result-header">
+            <div>
+              <div class="kb-result-title">${esc(r.title)}</div>
+              <div class="kb-result-meta">
+                <span class="type-tag">${esc(r.source_type)}</span>
+                ${r.domain ? `<span>${esc(r.domain)}</span>` : ''}
+                <span>${r.date_added ? r.date_added.split('T')[0] : ''}</span>
+                <span class="depth-indicator" title="Depth: ${r.depth || 1}">${depthBars}</span>
+              </div>
+            </div>
+          </div>
+          <div class="kb-result-body">
+            ${r.summary ? `<p><strong>Summary:</strong> ${esc(r.summary)}</p>` : ''}
+            ${r.relevance ? `<p><strong>Relevance:</strong> ${esc(r.relevance)}</p>` : ''}
+            ${r.url ? `<p><a href="${esc(r.url)}" target="_blank">${esc(r.url)}</a></p>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state">Failed to load sources</div>`;
+  }
+}
+
 async function loadKBStats() {
   try {
     const res = await fetch('/api/kb/stats');
